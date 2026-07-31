@@ -1,111 +1,183 @@
-# Job Search AI Agent
+Job Search AI Agent
 
-An autonomous, LangGraph-based agent that searches multiple job boards, scores postings against your resume using an LLM, tracks applications, flags real skill gaps from live market data, and emails you a daily report — built as a real production system, not a tutorial project.
+A multi-agent AI system that autonomously discovers, evaluates, and reports on job opportunities matched against a candidate's real resume — built as a production-grade portfolio project demonstrating applied agentic AI engineering.
 
-## Why this exists
+1. Problem Statement
 
-Most "AI job search" projects are thin wrappers around a single API call. This one is designed to actually be used daily, and to double as a learning vehicle for agentic AI engineering (LangChain, LangGraph, tool-calling, guardrails, persistence) — not a toy demo, a working tool with the reliability concerns a real system needs.
+Job searching at a senior/specialist level is inefficient in three specific ways:
 
-## What it does
+Discovery is manual and repetitive. Searching multiple job boards daily for the same set of role variations is time-consuming and easy to neglect.
+Relevance is hard to judge at scale. A human can't read 50+ full job descriptions a day and accurately judge fit against their own resume, especially across ambiguous or non-standard titles.
+Market signal is invisible. Candidates rarely have a systematic, evidence-based view of which specific skills are actually being requested across current job postings for their target roles — most "what should I learn next" decisions are guesswork.
 
-1. **Searches** two independent job sources (JSearch via RapidAPI, Adzuna) across a configurable list of target roles
-2. **Filters** out spam listings and untrustworthy apply links before anything reaches the LLM
-3. **Scores** each remaining job against your actual resume text using an LLM, returning a match level (High/Medium/Low), score, matched skills, and missing skills
-4. **Refuses to trust its own LLM blindly** — a fabrication guard rejects any job the model tries to score that wasn't actually returned by a real search call, preventing hallucinated jobs from ever being saved
-5. **Persists everything** to SQLite — scored jobs, application status, and daily API usage — so nothing gets rescored or re-applied-to twice
-6. **Tracks applications** — mark a job as applied, update its status (Interview/Rejected/Offer), and the exported report reflects it
-7. **Aggregates skill gaps** across every job scored, giving real, evidence-based signal on what to learn next — not a generic roadmap
-8. **Exports and emails** a daily report: an Excel sheet of all scored jobs (color-coded by match, with application status), a skill gap report, and the full run log, all in one email
+This project addresses all three with one system: it searches, it judges fit against a real resume using an LLM, and it aggregates the evidence into a concrete skill-gap report — while tracking applications so nothing is duplicated or lost.
 
-## Architecture
+2. Business Case
+Without this system	With this system
+Manually search 5-7 job boards/queries daily	One scheduled run covers multiple sources and target roles
+Read full job descriptions to judge fit	LLM-scored match level, matched/missing skills, per job
+No memory of what's already been seen or applied to	Persistent, deduplicated history across every run
+Generic "learn Python" type advice	Skill gaps derived from real, current job postings, with concrete first steps
+No visibility into application status	A single tracked, exportable, always-current pipeline
 
-Built as a single LangGraph agent with tool-calling, not a chain of hardcoded steps — the LLM decides when to search, when to score, and when to search again with broader terms if results are weak, bounded by a hard guardrail so it can never loop indefinitely or exhaust the API budget on its own.
+The system is designed to be genuinely used daily, not a demo — every design decision (persistence, deduplication, crash isolation, cost control) reflects that.
 
-```
-job-ai-agent/
-├── main.py                    # Orchestration only — no business logic
-├── config/
-│   ├── settings.py             # Env vars, constants, trusted/spam board lists
-│   └── prompts.py              # LLM prompt templates, isolated from logic code
-├── db/
-│   ├── repository.py           # Scored-jobs persistence + caching
-│   ├── applications.py         # Application status tracking
-│   └── api_usage.py            # Real Groq token/request usage tracking + pre-call budget guard
-├── tools/
-│   ├── search.py                # JSearch tool + credibility filtering + fabrication-guard registry
-│   ├── search_adzuna.py         # Adzuna tool (second, independent source, shares the same guards)
-│   └── scorer.py                 # Resume-matching tool, with the fabrication guard enforced
-├── graph/
-│   ├── nodes.py                  # Agent decision node, routing logic, guardrail node
-│   └── build.py                  # LangGraph assembly and compilation
-├── utils/
-│   ├── retry.py                  # Rate-limit-aware retry with fail-fast on unrecoverable limits
-│   └── logger.py                 # Single, non-duplicated logging to console + rotating file
-├── reports/
-│   ├── summary.py                 # Database-grounded summary (never trusts the LLM's own chat output as fact)
-│   ├── excel_export.py            # Full scored-jobs Excel export, joined with application status
-│   └── skill_gap_export.py        # Skill gap Excel export
-└── notifications/
-    └── email_sender.py             # Daily email with all three reports attached
-```
+3. Architecture
 
-### Design decisions worth knowing
 
-- **Fabrication guard**: the single most important safety mechanism in this system. LLMs will occasionally invent plausible-sounding jobs (fake companies, fake titles) when asked to summarize with no real results in hand. Every job passed to the scoring tool is checked against a registry of jobs a real search call actually returned in that session; anything else is rejected and logged, never saved.
-- **Database as source of truth, not the LLM's chat message**: the final report is built by querying SQLite directly, not by trusting whatever the agent's last message says — this is what makes the fabrication guard actually matter end-to-end.
-- **Credibility filtering happens before the LLM ever sees a job** — spam keywords and untrustworthy apply-link domains are filtered at the source, so no tokens are spent scoring junk.
-- **Real API usage tracking with a pre-call guard**: every LLM call's actual token usage (from `response_metadata`) is recorded, and a budget check runs *before* each call using Groq's published rate limits (RPM/RPD/TPM/TPD), so the system can reason about its own remaining budget rather than just reacting to 429s after the fact.
-- **Per-query crash isolation**: if one search query's entire run fails (rate limit exhaustion, malformed tool call, etc.), the failure is logged and the loop continues to the next query rather than losing all prior progress.
 
-## Setup
+A top-level planner coordinates three independent, specialized sub-agents. Each sub-agent is a fully self-contained LangGraph graph with its own internal state and reasoning, built and verified in isolation before being wired together.
 
-1. Clone the repo, `cd` into the project root
-2. `pip install -r requirements.txt` (langchain, langchain-groq, langgraph, requests, python-dotenv, pandas, openpyxl)
-3. Create a `.env` file with:
-   ```
-   RAPIDAPI_KEY=...
-   GROQ_API_KEY=...
-   GMAIL_FROM=...
-   GMAIL_APP_PASSWORD=...
-   ADZUNA_APP_ID=...
-   ADZUNA_APP_KEY=...
-   ```
-4. Add your resume as plain text to `my_resume.txt` in the project root
-5. Edit `SEARCH_QUERIES` in `config/settings.py` to your actual target roles
-6. `python main.py`
+                         ┌─────────────────────────┐
+                         │   Top-Level Planner      │
+                         │  (LLM selects target     │
+                         │   query for this run)    │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                         ┌─────────────────────────┐
+                         │      Search Agent         │
+                         │  ─────────────────────    │
+                         │  • Queries JSearch API     │
+                         │  • Queries Adzuna API      │
+                         │  • Filters spam / untrusted│
+                         │    apply-link domains       │
+                         │  • Internal loop: judges    │
+                         │    "found enough?" and      │
+                         │    retries if not, bounded  │
+                         │    by its own guardrail      │
+                         └────────────┬─────────────┘
+                                      │  credible, deduplicated jobs
+                                      ▼
+                         ┌─────────────────────────┐
+                         │      Resume Agent          │
+                         │  ─────────────────────     │
+                         │  • Scores each job vs.       │
+                         │    real resume text (LLM)    │
+                         │  • Fabrication guard:         │
+                         │    rejects any job not from   │
+                         │    a real search result        │
+                         │  • Tailors resume bullet        │
+                         │    points for High matches       │
+                         │    only (cost-bounded)            │
+                         └────────────┬─────────────┘
+                                      │  scored jobs
+                                      ▼
+                         ┌─────────────────────────┐
+                         │       Skill Agent           │
+                         │  ─────────────────────      │
+                         │  • Aggregates missing skills  │
+                         │    across all scored jobs      │
+                         │  • Researches the top N gaps    │
+                         │    with practical explanations   │
+                         │    (LLM, cost-bounded)             │
+                         └────────────┬─────────────┘
+                                      │  gaps + research
+                                      ▼
+                         ┌─────────────────────────┐
+                         │  Recommendation Step         │
+                         │  Grounded summary built        │
+                         │  directly from scored_jobs      │
+                         │  data — never from               │
+                         │  conversation memory               │
+                         └────────────┬─────────────┘
+                                      │
+                    ┌─────────────────┼─────────────────┐
+                    ▼                 ▼                 ▼
+              SQLite persistence  Excel export      Email delivery
+              (jobs, applications, (all-time scored  (Excel + skill
+               API usage)          jobs + status)     gaps + log)
 
-## Marking an application
+Design principle throughout: state is explicitly translated at each agent boundary, not shared as one global object. Each agent receives only what it needs and returns only its result — the outer graph has no visibility into how, for example, Search Agent internally decided it had "enough" results.
 
-```
+4. Tech Stack
+Layer	Technology	Purpose
+Orchestration	LangGraph	Multi-agent graph definition, state management, conditional routing
+LLM tooling	LangChain, langchain-groq	Tool-calling, prompt templating, LLM client abstraction
+LLM inference	Groq (Llama 3.3 70B)	Resume-job matching, resume tailoring, skill research, query planning
+Job data	JSearch API (RapidAPI), Adzuna API	Two independent job search sources
+Persistence	SQLite	Scored jobs, application tracking, API usage history
+Data export	pandas, openpyxl	Excel report generation
+Notification	Gmail SMTP	Daily automated report delivery
+Language	Python 3.11+	—
+5. AI Engineering Concepts Applied
+Multi-agent orchestration — independent sub-agents with their own state, composed via a top-level graph, not a single monolithic agent
+Tool calling / function calling — @tool-decorated functions (search_jobs, search_jobs_adzuna, score_job) invoked by the LLM with self-generated arguments
+Agentic loops with guardrails — Search Agent's internal retry loop is bounded by a hard attempt cap, preventing runaway API usage regardless of LLM judgment
+Grounded generation — the Recommendation step is given real scored data directly in its prompt, structurally preventing hallucination rather than merely instructing the model not to hallucinate
+Fabrication guard (LLM output verification) — every job the LLM attempts to score is checked against a registry of jobs a real search call actually returned; anything else is rejected and logged, never persisted
+Prompt engineering — structured, constrained prompts (explicit JSON schema requests, "reply ONLY with..." patterns) isolated into a dedicated prompts module
+Caching for cost control — previously-scored jobs are never re-sent to the LLM
+Cost-bounded expensive operations — resume tailoring and skill research are deliberately restricted to only the highest-value cases (High matches, top-N gaps), not applied indiscriminately
+Rate-limit-aware resilience — exponential backoff with a distinction between recoverable (per-minute) and unrecoverable (daily) limits, failing fast on the latter instead of wasting retries
+Proactive budget guarding — real per-call token usage is recorded and checked against published rate limits before the next call fires, rather than only reacting to failures after the fact
+6. Problems Encountered During Development (and Resolutions)
+Problem	Root Cause	Resolution
+LLM invented plausible-sounding fake job listings when given no real results to summarize	LLMs pattern-match to "what a summary looks like" even with no grounding data	Fabrication guard: reject and log any scored job not present in that session's real search results
+Credibility filter rejected legitimate job sources (e.g. Adzuna's own redirect domain, Shine, Foundit)	Trusted-domain list was incomplete relative to actual sources in use	Expanded and audited the trusted-board list against real observed domains
+Every log line printed multiple times	logging.getLogger(name) returns a shared singleton; handlers were re-added on every import across multiple modules	Added a guard (if not logger.handlers:) so handlers are only configured once
+Tool responses of [] were rejected by the LLM provider	Groq's API requires non-empty content for any tool-role message	Search tools return an informational placeholder instead of an empty list when nothing new is found
+StructuredTool object is not callable	@tool-decorated functions must be invoked via .invoke({...}), not called directly	Standardized all tool call sites to use .invoke()
+Frequent 429 rate-limit errors under heavy same-day testing	Free-tier Groq limits (30 RPM / 1K RPD / 12K TPM / 100K TPD for Llama 3.3 70B) are easily exhausted with unthrottled, repeated testing	Built a proactive usage tracker with a pre-call budget guard, using a 90% safety margin against all four limit types
+A single job's scoring failure or a single query's total failure could abort an entire run	No isolation between units of work	Per-job and per-query try/except boundaries; a failure is logged and the run continues
+Excel export silently showed empty apply links	apply_link was an optional tool parameter the LLM sometimes omitted	Made apply_link a required parameter, removing the LLM's ability to skip it
+7. Rate Limit & Token Management
+
+Groq's free-tier limits for the model in use (Llama 3.3 70B Versatile):
+
+Limit type	Value
+Requests per minute (RPM)	30
+Requests per day (RPD)	1,000
+Tokens per minute (TPM)	12,000
+Tokens per day (TPD)	100,000
+
+Measures taken:
+
+Every LLM response's real token usage (response_metadata['token_usage']) is recorded to a local table immediately after each call — actual usage, not estimates.
+Before every LLM call, a guard checks the last-60-seconds and today's totals against all four limits with a 90% safety margin, and refuses the call proactively if it would breach that margin — this catches problems before an API rejection, not just after.
+Retry logic distinguishes recoverable delays (Groq reports a short wait, e.g. seconds) from unrecoverable ones (a long suggested wait indicates a daily cap, which retrying cannot fix) and fails fast in the latter case rather than burning time on retries that cannot succeed.
+Expensive operations (resume tailoring, skill research) are deliberately scoped to only the highest-value subset of results, not applied to every item, keeping per-run token cost proportional to output value.
+8. Setup
+pip install -r requirements.txt
+
+Create .env:
+
+RAPIDAPI_KEY=...
+GROQ_API_KEY=...
+GMAIL_FROM=...
+GMAIL_APP_PASSWORD=...
+ADZUNA_APP_ID=...
+ADZUNA_APP_KEY=...
+
+Add resume text to my_resume.txt, set target roles in config/settings.py (SEARCH_QUERIES), then:
+
+python main.py
+
+Mark an application:
+
 python mark_applied.py "Employer Name" "Job Title" [apply_link]
-```
+9. Repository Structure
+job-ai-agent/
+├── main.py                 # Entry point — orchestration only
+├── mark_applied.py         # CLI utility
+├── config/                 # Settings, prompts, target queries
+├── db/                     # Persistence: scored jobs, applications, API usage
+├── tools/                  # Search (JSearch, Adzuna) and scoring tools
+├── graph/phase3/           # Multi-agent graph: planner + 3 sub-agents
+├── utils/                  # Retry logic, logging
+├── reports/                # Excel and summary generation
+├── notifications/          # Email delivery
+└── tests/                  # Module-level smoke tests
+10. Current Limitations & Roadmap
 
-## Current status: Phase 1 complete
+Known limitation: the top-level planner makes one decision (which query to run) at the start of a run; execution afterward is deterministic regardless of intermediate results. A more adaptive design would consult the planner between agents — reacting to a Search Agent finding nothing, or a Resume Agent finding an unusually high yield of strong matches — rather than planning once, upfront.
 
-- ✅ Dual-source search (JSearch + Adzuna) with shared credibility filtering
-- ✅ Resume-based LLM scoring with a proven, tested fabrication guard
-- ✅ Rate-limit resilience with fail-fast on unrecoverable (daily) limits
-- ✅ Application tracking
-- ✅ Real Groq API usage tracking with a pre-call budget guard
-- ✅ Excel + skill gap export + email delivery, verified end-to-end
-- ✅ Full multi-query run tested under real-world partial failures (rate limits, malformed tool calls) without crashing
+Near-term:
 
-## Roadmap
+Scheduled, unattended execution (Windows Task Scheduler)
+Adaptive, outcome-aware planning between agents
+Query-history awareness to avoid re-selecting recently-exhausted queries
 
-**Near-term**
-- Windows Task Scheduler integration for genuinely unattended daily runs
-- Smarter token estimation in the pre-call guard (based on actual conversation size, not a flat estimate)
-- Evaluate switching the scoring model to a higher-daily-quota model for more headroom
+Explicitly deferred: observability/tracing (LangSmith), retrieval-augmented generation, cloud deployment — each treated as a distinct, deliberate learning effort rather than folded into this build.
 
-**Phase 2 (planned)**
-Break the single agent's decision loop into fixed graph stages — Planner → Search → Score → Skill Gap → Recommend — so only the steps that genuinely need LLM judgment (query planning, final summarization) use the LLM, cutting redundant token usage from re-sending full conversation history on every loop turn.
-
-**Phase 3 (planned, longer-term)**
-Decompose into genuinely separate sub-agents (Search Agent, Resume Agent, Skill Agent) coordinated by a top-level planner — real multi-agent orchestration, once Phase 2's single-graph pipeline is proven stable.
-
-**Explicitly deferred**
-LangSmith tracing/observability, cloud deployment (AWS EC2/RDS) — valuable, but treated as separate, deliberate learning projects rather than something to rush into the current build.
-
-## Built with
-
-Python, LangChain, LangGraph, Groq (Llama 3.3 70B), SQLite, pandas, JSearch API, Adzuna API, Gmail SMTP
+Built as a hands-on demonstration of applied agentic AI engineering: orchestration, tool use, cost-aware LLM operation, and — deliberately — active, tested defenses against an LLM's own unreliability, not only its capability.
