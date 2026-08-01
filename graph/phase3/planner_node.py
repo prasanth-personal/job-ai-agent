@@ -1,40 +1,39 @@
-import json
-from langchain_groq import ChatGroq
-from config.settings import GROQ_API_KEY, MY_RESUME, SEARCH_QUERIES
+from config.settings import MAX_SEARCHES
+from db.query_rotation import get_next_queries_for_family
+from db.expanded_queries import get_queries_grouped_by_family
 from graph.phase3.state import TopLevelState
-from utils.retry import call_llm_with_retry
 from utils.logger import get_logger
 
 log = get_logger()
 
 
 def planner_node(state: TopLevelState) -> dict:
-    """Top-level planner — same judgment as Phase 2's planner, but its
-    only job here is picking ONE best query for this run to hand to
-    Search Agent (Phase 3 runs one query per full 3-agent pass, since
-    each pass is more expensive than Phase 2's fixed pipeline)."""
+    """Top-level planner — deterministic round-robin, but now split
+    EVENLY ACROSS ROLE FAMILIES (Salesforce, GenAI Engineer, etc.)
+    instead of one flat pool. This guarantees both tracks get searched
+    most runs, instead of one family dominating by chance the way a
+    single shared cursor allowed.
 
-    query_list_text = "\n".join(f"- {q}" for q in SEARCH_QUERIES)
-    prompt = f"""You are planning a job search session.
+    MAX_SEARCHES is distributed as evenly as possible across families —
+    e.g. MAX_SEARCHES=2 with 2 families = 1 query per family. Any
+    remainder (if MAX_SEARCHES doesn't divide evenly) goes to the
+    families earliest in the dict, in order."""
+    grouped = get_queries_grouped_by_family()
+    families = list(grouped.keys())
+    num_families = len(families)
 
-CANDIDATE RESUME:
-{MY_RESUME}
+    base_per_family = MAX_SEARCHES // num_families
+    remainder = MAX_SEARCHES % num_families
 
-AVAILABLE QUERIES:
-{query_list_text}
+    chosen = []
+    for i, family in enumerate(families):
+        count = base_per_family + (1 if i < remainder else 0)
+        if count == 0:
+            continue
+        family_queries = grouped[family]
+        picked = get_next_queries_for_family(family, family_queries, count)
+        chosen.extend(picked)
+        log.info(f"Phase3 planner: picked {len(picked)} from '{family}' (pool size {len(family_queries)}): {picked}")
 
-Pick the SINGLE best query for this candidate right now. Reply ONLY with
-that exact query string, no quotes, no markdown, no explanation."""
-
-    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0, groq_api_key=GROQ_API_KEY)
-
-    try:
-        response = call_llm_with_retry(llm, prompt, estimated_tokens=1000)
-        chosen = response.content.strip().strip('"').strip("'")
-        if chosen not in SEARCH_QUERIES:
-            raise ValueError(f"LLM returned a query not in config: '{chosen}'")
-        log.info(f"Phase3 planner selected: {chosen}")
-        return {"queries": [chosen]}
-    except Exception as e:
-        log.warning(f"Phase3 planner failed ({e}) — falling back to first configured query")
-        return {"queries": [SEARCH_QUERIES[0]]}
+    log.info(f"Phase3 planner selected {len(chosen)} queries total across {num_families} families: {chosen}")
+    return {"queries": chosen}

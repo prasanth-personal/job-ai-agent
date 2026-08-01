@@ -11,7 +11,14 @@ from config.settings import SEARCH_QUERIES
 from utils.logger import get_logger
 from collections import Counter
 from datetime import date
+from db.query_rotation import init_query_rotation_table
+from db.expanded_queries import init_expanded_queries_table, refresh_expanded_queries
 
+# ... with your other init_*() calls:
+init_expanded_queries_table()
+refresh_expanded_queries()  # only actually regenerates if pool is empty or >14 days old
+
+init_query_rotation_table()
 log = get_logger()
 
 

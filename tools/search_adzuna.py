@@ -2,7 +2,7 @@ import re
 import requests
 from config.settings import ADZUNA_APP_ID, ADZUNA_APP_KEY, ADZUNA_ENABLED
 from db.repository import is_already_scored, make_job_key
-from tools.search import is_credible, valid_jobs_this_session
+from tools.search import is_credible, valid_jobs_this_session, _clean_text
 from langchain_core.tools import tool
 from utils.logger import get_logger
 
@@ -48,8 +48,8 @@ def search_jobs_adzuna(query: str) -> list[dict]:
     skipped_seen = 0
     skipped_spam = 0
     for job in raw_jobs:
-        title = job.get("title", "")
-        employer = (job.get("company") or {}).get("display_name", "")
+        title = _clean_text(job.get("title", ""))
+        employer = _clean_text((job.get("company") or {}).get("display_name", ""))
         apply_link = job.get("redirect_url", "")
         description = job.get("description", "")
         location = (job.get("location") or {}).get("display_name", "Not specified")

@@ -1,0 +1,104 @@
+2026-08-01 21:21:05 [INFO] Starting Phase 3 pipeline — 7 queries configured, planner will pick one
+2026-08-01 21:21:05 [INFO] Phase3 planner selected 2 queries this run: ['Salesforce Senior Consultant', 'Agentforce Developer India']
+2026-08-01 21:21:13 [WARNING] search_jobs: filtered out 'Senior Technical Consultant - Salesforce Field Services' @ 'Salesforce' — Suspicious board: bebee.com
+2026-08-01 21:21:13 [WARNING] search_jobs: filtered out 'Senior Consultant - Salesforce CRM' @ 'NTT DATA Global Delivery Services Ltd' — Unrecognized domain: apna.co
+2026-08-01 21:21:13 [WARNING] search_jobs: filtered out 'Senior Salesforce Functional Consultant' @ 'Aidastech India' — Suspicious board: bebee.com
+2026-08-01 21:21:13 [INFO] search_jobs: filtered 3 job(s) as not credible
+2026-08-01 21:21:14 [INFO] SearchAgent attempt 1: 4 new, 4 total, done=True
+2026-08-01 21:21:14 [INFO] Top-level: Search Agent query 'Salesforce Senior Consultant' returned 4 jobs, 4 new after cross-query dedup
+2026-08-01 21:21:23 [WARNING] search_jobs: filtered out 'Salesforce Agentforce Sr. Developer | Tcs Contract' @ 'Nuestra Cynosure Software Solutions' — Suspicious board: bebee.com
+2026-08-01 21:21:23 [WARNING] search_jobs: filtered out 'Agentforce + LWC Developer' @ 'NTT DATA  Services' — Unrecognized domain: careers-inc.nttdata.com
+2026-08-01 21:21:23 [INFO] search_jobs: filtered 2 job(s) as not credible
+2026-08-01 21:21:26 [INFO] SearchAgent attempt 1: 8 new, 8 total, done=True
+2026-08-01 21:21:26 [INFO] Top-level: Search Agent query 'Agentforce Developer India' returned 8 jobs, 8 new after cross-query dedup
+2026-08-01 21:21:26 [INFO] Top-level: Search Agent total across 2 queries: 12 jobs
+2026-08-01 21:21:44 [INFO] ResumeAgent scored 12 of 12 jobs
+2026-08-01 21:21:51 [INFO] Top-level: Resume Agent scored 12 jobs
+2026-08-01 21:21:51 [INFO] SkillAgent aggregated 30 distinct gaps
+2026-08-01 21:21:53 [INFO] Top-level: Skill Agent found 30 gaps, researched 3
+2026-08-01 21:21:53 [INFO] Query used: ['Salesforce Senior Consultant', 'Agentforce Developer India']
+2026-08-01 21:21:53 [INFO] Jobs found: 12
+2026-08-01 21:21:53 [INFO] Jobs scored: 12
+2026-08-01 21:21:59 [INFO] Email sent to prasanthr33@gmail.com
+2026-08-01 21:47:27 [INFO] Starting Phase 3 pipeline — 7 queries configured, planner will pick one
+2026-08-01 21:47:27 [INFO] Phase3 planner selected 2 queries this run: ['Salesforce Technical Lead India', 'AI Engineer Salesforce India']
+2026-08-01 21:47:35 [WARNING] search_jobs: filtered out 'AES Salesforce Technical Lead/Manager - Consult' @ 'PwC Acceleration Center India' — Suspicious board: bebee.com
+2026-08-01 21:47:35 [INFO] search_jobs: filtered 1 job(s) as not credible
+2026-08-01 21:47:37 [INFO] search_jobs_adzuna: skipped 1 job(s) already scored in a previous run
+2026-08-01 21:47:37 [INFO] SearchAgent attempt 1: 8 new, 8 total, done=True
+2026-08-01 21:47:37 [INFO] Top-level: Search Agent query 'Salesforce Technical Lead India' returned 8 jobs, 8 new after cross-query dedup
+2026-08-01 21:47:45 [WARNING] search_jobs: filtered out 'Salesforce AI Engineer  Agentforce' @ 'Vrinda International Noida' — Suspicious board: bebee.com
+2026-08-01 21:47:45 [WARNING] search_jobs: filtered out 'Forward Deployed Engineer with Salesforce AI Expertise (Bengaluru)' @ 'Salesforce.com India' — Unrecognized domain: kitjob.in
+2026-08-01 21:47:45 [INFO] search_jobs: filtered 2 job(s) as not credible
+2026-08-01 21:47:47 [INFO] SearchAgent attempt 1: 4 new, 4 total, done=True
+2026-08-01 21:47:47 [INFO] Top-level: Search Agent query 'AI Engineer Salesforce India' returned 4 jobs, 4 new after cross-query dedup
+2026-08-01 21:47:47 [INFO] Top-level: Search Agent total across 2 queries: 12 jobs
+2026-08-01 21:48:07 [INFO] ResumeAgent scored 12 of 12 jobs
+2026-08-01 21:48:12 [INFO] Top-level: Resume Agent scored 12 jobs
+2026-08-01 21:48:12 [INFO] SkillAgent aggregated 41 distinct gaps
+2026-08-01 21:48:14 [INFO] Top-level: Skill Agent found 41 gaps, researched 3
+2026-08-01 21:48:14 [INFO] Query used: ['Salesforce Technical Lead India', 'AI Engineer Salesforce India']
+2026-08-01 21:48:14 [INFO] Jobs found: 12
+2026-08-01 21:48:14 [INFO] Jobs scored: 12
+2026-08-01 21:48:20 [INFO] Email sent to prasanthr33@gmail.com
+2026-08-01 21:55:44 [INFO] Regenerating expanded query pool via LLM...
+2026-08-01 21:55:46 [INFO] Generated 8 queries for 'Salesforce'
+2026-08-01 21:55:47 [INFO] Generated 8 queries for 'GenAI Engineer'
+2026-08-01 21:55:47 [INFO] Stored 16 expanded queries total
+2026-08-01 21:55:47 [INFO] Starting Phase 3 pipeline — 7 queries configured, planner will pick one
+2026-08-01 21:55:47 [INFO] Phase3 planner selected 2 queries this run (pool size 16): ['Salesforce Integration Architect', 'Salesforce Cloud Architect']
+2026-08-01 21:55:55 [INFO] search_jobs_adzuna: skipped 1 job(s) already scored in a previous run
+2026-08-01 21:55:55 [INFO] SearchAgent attempt 1: 8 new, 8 total, done=True
+2026-08-01 21:55:55 [INFO] Top-level: Search Agent query 'Salesforce Integration Architect' returned 8 jobs, 8 new after cross-query dedup
+2026-08-01 21:56:04 [WARNING] search_jobs: filtered out 'Salesforce Health Cloud Architect' @ 'Zensar' — Unrecognized domain: fa-etvl-saasfaprod1.fa.ocs.oraclecloud.com
+2026-08-01 21:56:04 [WARNING] search_jobs: filtered out 'Salesforce Architect – Loyalty Management & Marketing Cloud' @ 'Dinero Solutions' — Suspicious board: bebee.com
+2026-08-01 21:56:04 [WARNING] search_jobs: filtered out 'Salesforce Architect - 6 Months Contract (Extendable)' @ 'LevelShift' — Suspicious board: bebee.com
+2026-08-01 21:56:04 [INFO] search_jobs: filtered 3 job(s) as not credible
+2026-08-01 21:56:06 [INFO] SearchAgent attempt 1: 7 new, 7 total, done=True
+2026-08-01 21:56:06 [INFO] Top-level: Search Agent query 'Salesforce Cloud Architect' returned 7 jobs, 6 new after cross-query dedup
+2026-08-01 21:56:06 [INFO] Top-level: Search Agent total across 2 queries: 14 jobs
+2026-08-01 21:56:25 [ERROR] Blocked before call — Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:25 [ERROR] score_job: giving up on 'Sr Tech Lead - Salesforce Financial Services Cloud' @ 'TalentOla' — API usage guard: Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:25 [INFO] ResumeAgent scored 14 of 14 jobs
+2026-08-01 21:56:26 [ERROR] Blocked before call — Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:26 [WARNING] ResumeAgent: tailoring failed for 'Salesforce Technical Architect - (Life Sciences Industry exp mandate)' — API usage guard: Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:26 [ERROR] Blocked before call — Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:26 [WARNING] ResumeAgent: tailoring failed for 'Salesforce Service Cloud Architect' — API usage guard: Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:26 [ERROR] Blocked before call — Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:26 [WARNING] ResumeAgent: tailoring failed for 'Salesforce Associate Architect' — API usage guard: Would exceed TPM safety margin (9973/12000 this minute)
+2026-08-01 21:56:26 [INFO] Top-level: Resume Agent scored 14 jobs
+2026-08-01 21:56:26 [INFO] SkillAgent aggregated 51 distinct gaps
+2026-08-01 21:56:28 [INFO] Top-level: Skill Agent found 51 gaps, researched 3
+2026-08-01 21:56:28 [INFO] Query used: ['Salesforce Integration Architect', 'Salesforce Cloud Architect']
+2026-08-01 21:56:28 [INFO] Jobs found: 14
+2026-08-01 21:56:28 [INFO] Jobs scored: 14
+2026-08-01 21:56:34 [INFO] Email sent to prasanthr33@gmail.com
+2026-08-01 22:14:52 [INFO] Expanded query pool is fresh — skipping regeneration
+2026-08-01 22:14:52 [INFO] Starting Phase 3 pipeline — 7 queries configured, planner will pick one
+2026-08-01 22:14:52 [INFO] Phase3 planner: picked 1 from 'Salesforce' (pool size 8): ['Salesforce Senior Consultant']
+2026-08-01 22:14:52 [INFO] Phase3 planner: picked 1 from 'GenAI Engineer' (pool size 8): ['Senior AI Engineer']
+2026-08-01 22:14:52 [INFO] Phase3 planner selected 2 queries total across 2 families: ['Salesforce Senior Consultant', 'Senior AI Engineer']
+2026-08-01 22:15:04 [WARNING] search_jobs: filtered out 'Senior Consultant - Salesforce CRM' @ 'NTT DATA Global Delivery Services Ltd' — Unrecognized domain: apna.co
+2026-08-01 22:15:04 [WARNING] search_jobs: filtered out 'Senior Salesforce Functional Consultant' @ 'Aidastech India' — Suspicious board: bebee.com
+2026-08-01 22:15:04 [INFO] search_jobs: skipped 3 job(s) already scored in a previous run
+2026-08-01 22:15:04 [INFO] search_jobs: filtered 2 job(s) as not credible
+2026-08-01 22:15:07 [INFO] search_jobs_adzuna: skipped 2 job(s) already scored in a previous run
+2026-08-01 22:15:07 [INFO] SearchAgent attempt 1: 0 new, 0 total, done=False
+2026-08-01 22:15:18 [WARNING] search_jobs: filtered out 'Senior Consultant - Salesforce CRM' @ 'NTT DATA Global Delivery Services Ltd' — Unrecognized domain: apna.co
+2026-08-01 22:15:19 [WARNING] search_jobs: filtered out 'Senior Salesforce Functional Consultant' @ 'Aidastech India' — Suspicious board: bebee.com
+2026-08-01 22:15:19 [INFO] search_jobs: skipped 3 job(s) already scored in a previous run
+2026-08-01 22:15:19 [INFO] search_jobs: filtered 2 job(s) as not credible
+2026-08-01 22:15:21 [INFO] search_jobs_adzuna: skipped 2 job(s) already scored in a previous run
+2026-08-01 22:15:21 [INFO] SearchAgent attempt 2: 0 new, 0 total, done=True
+2026-08-01 22:15:21 [INFO] Top-level: Search Agent query 'Salesforce Senior Consultant' returned 0 jobs, 0 new after cross-query dedup
+2026-08-01 22:15:32 [INFO] SearchAgent attempt 1: 10 new, 10 total, done=True
+2026-08-01 22:15:32 [INFO] Top-level: Search Agent query 'Senior AI Engineer' returned 10 jobs, 8 new after cross-query dedup
+2026-08-01 22:15:32 [INFO] Top-level: Search Agent total across 2 queries: 8 jobs
+2026-08-01 22:15:44 [INFO] ResumeAgent scored 8 of 8 jobs
+2026-08-01 22:15:45 [INFO] Top-level: Resume Agent scored 8 jobs
+2026-08-01 22:15:45 [INFO] SkillAgent aggregated 50 distinct gaps
+2026-08-01 22:15:47 [INFO] Top-level: Skill Agent found 50 gaps, researched 3
+2026-08-01 22:15:47 [INFO] Query used: ['Salesforce Senior Consultant', 'Senior AI Engineer']
+2026-08-01 22:15:47 [INFO] Jobs found: 8
+2026-08-01 22:15:47 [INFO] Jobs scored: 8
+2026-08-01 22:15:52 [INFO] Email sent to prasanthr33@gmail.com

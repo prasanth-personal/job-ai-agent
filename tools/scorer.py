@@ -11,9 +11,6 @@ from utils.logger import get_logger
 log = get_logger()
 
 
-
-
-
 @tool
 def score_job(job_title: str, employer_name: str, job_description: str,
               apply_link: str, location: str = "") -> dict:
@@ -24,7 +21,6 @@ def score_job(job_title: str, employer_name: str, job_description: str,
 
     cached = get_cached_score(employer_name, job_title)
     if cached is not None:
-        
         return cached
 
     key = make_job_key(employer_name, job_title)
@@ -33,7 +29,6 @@ def score_job(job_title: str, employer_name: str, job_description: str,
         return {"match": "Low", "score": 0, "matched_skills": [], "missing_skills": [],
                 "note": "Rejected — this job was not found by a real search_jobs call"}
 
-    
     prompt = build_scoring_prompt(job_title, job_description, MY_RESUME)
     scoring_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0, groq_api_key=GROQ_API_KEY)
 
@@ -43,7 +38,7 @@ def score_job(job_title: str, employer_name: str, job_description: str,
     try:
         response = call_llm_with_retry(scoring_llm, prompt)
         usage = response.response_metadata.get("token_usage", {})
-        record_usage(prompt_tokens=usage.get("prompt_tokens", 0),completion_tokens=usage.get("completion_tokens", 0),
+        record_usage(prompt_tokens=usage.get("prompt_tokens", 0), completion_tokens=usage.get("completion_tokens", 0),
         total_tokens=usage.get("total_tokens", 0),)
     except RuntimeError as e:
         log.error(f"score_job: giving up on '{job_title}' @ '{employer_name}' — {e}")
@@ -57,6 +52,21 @@ def score_job(job_title: str, employer_name: str, job_description: str,
     except json.JSONDecodeError:
         result = {"match": "Low", "score": 0, "matched_skills": [], "missing_skills": [],
                    "note": "Could not parse LLM response"}
+
+    # Compute score deterministically from actual skill overlap, instead of
+    # trusting the LLM to invent a number — this is what was causing every
+    # High match to land on the same round 90, with no real differentiation.
+    matched = result.get("matched_skills", [])
+    missing = result.get("missing_skills", [])
+    total = len(matched) + len(missing)
+    result["score"] = round((len(matched) / total) * 100) if total > 0 else 0
+
+    if result["score"] >= 75:
+        result["match"] = "High"
+    elif result["score"] >= 40:
+        result["match"] = "Medium"
+    else:
+        result["match"] = "Low"
 
     save_score(employer_name, job_title, location, apply_link, result)
 

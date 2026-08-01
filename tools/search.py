@@ -1,3 +1,4 @@
+import html
 import requests
 from utils.logger import get_logger
 log = get_logger()
@@ -5,6 +6,17 @@ from urllib.parse import urlparse
 from config.settings import RAPIDAPI_KEY, SPAM_KEYWORDS, TRUSTED_BOARDS, SUSPICIOUS_BOARDS
 from db.repository import is_already_scored, make_job_key
 from langchain_core.tools import tool
+
+
+def _clean_text(text: str) -> str:
+    """JSearch sometimes returns titles/company names with unescaped
+    unicode sequences (e.g. 'u0026' instead of '&'). Decode standard
+    HTML/unicode entities so titles display cleanly in the Excel export."""
+    if not text:
+        return text
+    text = html.unescape(text)
+    text = text.replace("u0026", "&")  # catches the raw literal case too
+    return text
 
 
 def verify_apply_link(apply_link: str, employer_website: str = "") -> tuple[bool, str]:
@@ -79,8 +91,8 @@ def search_jobs(query: str) -> list[dict]:
     skipped_seen = 0
     skipped_spam = 0
     for job in raw_jobs:
-        title = job.get("job_title")
-        employer = job.get("employer_name")
+        title = _clean_text(job.get("job_title"))
+        employer = _clean_text(job.get("employer_name"))
         apply_link = job.get("job_apply_link", "")
         employer_website = job.get("employer_website", "") or ""
 

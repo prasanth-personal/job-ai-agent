@@ -45,6 +45,10 @@ SEARCH_QUERIES = [
     "Salesforce AI Consultant India",
     
 ]
+ROLE_FAMILIES = {
+    "Salesforce": "Salesforce development, consulting, architecture, and technical leadership roles",
+    "GenAI Engineer": "Generative AI / LLM application engineering, AI agent development, and applied AI roles",
+}
 
 
 def load_resume() -> str:

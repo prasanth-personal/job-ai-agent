@@ -5,12 +5,27 @@ from db.api_usage import can_make_request
 
 log = get_logger()
 
-
 def call_llm_with_retry(llm, prompt, max_retries=3, estimated_tokens=1500):
-    # Check the budget BEFORE spending a real call on it.
+    # Check the budget BEFORE spending a real call on it. If blocked by a
+    # per-MINUTE limit (RPM/TPM), wait for the trailing-60s window to roll
+    # over and retry — instead of giving up immediately and losing the job
+    # entirely, which is what was happening before. Per-DAY limits (RPD/TPD)
+    # can't be waited out within a single run, so those still fail fast.
+    budget_wait_seconds = 20
+    max_budget_retries = 3
     ok, reason = can_make_request(estimated_tokens)
+    budget_attempt = 0
+    while not ok and budget_attempt < max_budget_retries:
+        if "today" in reason:
+            log.error(f"Blocked before call — {reason}")
+            raise RuntimeError(f"API usage guard: {reason}")
+        budget_attempt += 1
+        log.warning(f"Blocked before call — {reason} — waiting {budget_wait_seconds}s for window to roll over (attempt {budget_attempt}/{max_budget_retries})")
+        time.sleep(budget_wait_seconds)
+        ok, reason = can_make_request(estimated_tokens)
+
     if not ok:
-        log.error(f"Blocked before call — {reason}")
+        log.error(f"Still blocked after {max_budget_retries} waits — {reason}")
         raise RuntimeError(f"API usage guard: {reason}")
 
     for attempt in range(max_retries):
