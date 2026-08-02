@@ -6,6 +6,7 @@ from db.embeddings import is_semantic_duplicate
 from tools.search import is_credible, valid_jobs_this_session, _clean_text
 from langchain_core.tools import tool
 from utils.logger import get_logger
+from db.search_usage import record_search_call
 
 log = get_logger()
 
@@ -33,6 +34,7 @@ def search_jobs_adzuna(query: str) -> list[dict]:
     }
 
     response = requests.get(url, params=params, timeout=30)
+    record_search_call("adzuna")
     if response.status_code != 200:
         log.error(f"Adzuna error: {response.status_code} - {response.text}")
         return [{"info": f"Adzuna search failed with status {response.status_code}."}]

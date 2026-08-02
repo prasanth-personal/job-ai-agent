@@ -3,6 +3,7 @@ from config.settings import GROQ_API_KEY, MY_RESUME
 from graph.phase3.resume_agent.state import ResumeAgentState
 from tools.scorer import score_job
 from utils.retry import call_llm_with_retry
+from db.resume_chunks import get_relevant_resume_excerpt
 from utils.logger import get_logger
 
 log = get_logger()
@@ -24,6 +25,7 @@ def score_step(state: ResumeAgentState) -> dict:
                 "job_title": job.get("job_title", ""),
                 "employer_name": job.get("employer_name", ""),
                 "apply_link": job.get("apply_link", ""),
+                "job_description": job.get("job_description", ""),
                 "source_query": job.get("source_query", ""),
                 **result,
             })
@@ -48,10 +50,12 @@ def tailor_step(state: ResumeAgentState) -> dict:
             continue
 
         matched = ", ".join(job.get("matched_skills", []))
+        job_description = job.get("job_description", "") or job.get("job_title", "")
+        resume_excerpt = get_relevant_resume_excerpt(job_description, MY_RESUME)
         prompt = f"""Given this resume and a job the candidate matched HIGH on,
 write 2-3 short tailored resume bullet points emphasizing the overlap.
 
-RESUME: {MY_RESUME[:1500]}
+RESUME: {resume_excerpt}
 JOB: {job['job_title']} at {job['employer_name']}
 MATCHED SKILLS: {matched}
 

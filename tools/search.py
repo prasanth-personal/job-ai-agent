@@ -7,6 +7,7 @@ from config.settings import RAPIDAPI_KEY, SPAM_KEYWORDS, TRUSTED_BOARDS, SUSPICI
 from db.repository import is_already_scored, make_job_key
 from db.embeddings import is_semantic_duplicate
 from langchain_core.tools import tool
+from db.search_usage import record_search_call
 
 
 def _clean_text(text: str) -> str:
@@ -73,6 +74,7 @@ def search_jobs(query: str) -> list[dict]:
     params = {"query": query, "location": "India", "num_pages": "1"}
 
     response = requests.get(url, headers=headers, params=params)
+    record_search_call("jsearch")
     if response.status_code != 200:
         log.error(f"Error: {response.status_code} - {response.text}")
         return [{"info": f"Search failed with status {response.status_code} — no jobs returned."}]

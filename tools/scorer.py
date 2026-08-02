@@ -8,6 +8,7 @@ from tools.search import valid_jobs_this_session
 from config.prompts import build_scoring_prompt
 from db.api_usage import record_usage
 from db.query_performance import record_query_outcome
+from db.resume_chunks import get_relevant_resume_excerpt
 from utils.logger import get_logger
 log = get_logger()
 
@@ -31,7 +32,8 @@ def score_job(job_title: str, employer_name: str, job_description: str,
         return {"match": "Low", "score": 0, "matched_skills": [], "missing_skills": [],
                 "note": "Rejected — this job was not found by a real search_jobs call"}
 
-    prompt = build_scoring_prompt(job_title, job_description, MY_RESUME)
+    resume_excerpt = get_relevant_resume_excerpt(job_description, MY_RESUME)
+    prompt = build_scoring_prompt(job_title, job_description, resume_excerpt)
     scoring_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0, groq_api_key=GROQ_API_KEY)
 
     # FIX: catch total rate-limit exhaustion here instead of letting it

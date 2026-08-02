@@ -16,6 +16,8 @@ from db.expanded_queries import init_expanded_queries_table, refresh_expanded_qu
 from db.checkpoints import init_checkpoint_table, load_checkpoint, clear_checkpoint, next_stage
 from db.embeddings import init_embeddings_table
 from db.query_performance import init_query_performance_table
+from db.resume_chunks import init_resume_chunks_table
+from db.search_usage import init_search_usage_table, get_usage_summary
 
 log = get_logger()
 
@@ -28,8 +30,11 @@ def main():
     init_expanded_queries_table()
     init_checkpoint_table()
     init_query_performance_table()
+    init_resume_chunks_table()
     init_embeddings_table()
     refresh_expanded_queries()
+    init_search_usage_table()
+    
 
     today = date.today()
     checkpoint = load_checkpoint(today)
@@ -75,6 +80,7 @@ def main():
     skill_gap_file = export_skill_gaps(Counter(result["skill_gaps"]))
 
     usage_today = get_usage_today()
+    search_usage = get_usage_summary()
     summary_text = (
         f"Job Search Agent run complete (Phase 3 — multi-agent).\n\n"
         f"Query used: {result['queries']}\n"
@@ -82,6 +88,8 @@ def main():
         f"Jobs scored: {len(result['scored_jobs'])}\n"
         f"Groq usage today: {usage_today['requests']} requests, {usage_today['tokens']} tokens "
         f"(limits: {RPD_LIMIT} req/day, {TPD_LIMIT} tokens/day)\n\n"
+        f"JSearch usage this month: {search_usage['jsearch']['month']}/{search_usage['jsearch']['limit']}\n"
+        f"Adzuna usage this month: {search_usage['adzuna']['month']}/{search_usage['adzuna']['limit']}\n\n"
         f"See attached: jobs_today.xlsx, skill_gap_report.xlsx, job_agent.log\n"
     )
     send_daily_report(

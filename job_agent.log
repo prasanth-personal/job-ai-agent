@@ -1157,3 +1157,44 @@ message: "This API method requires billing to be enabled. Please enable billing 
 2026-08-02 21:21:11 [INFO] Jobs found: 12
 2026-08-02 21:21:11 [INFO] Jobs scored: 12
 2026-08-02 21:21:19 [INFO] Email sent to prasanthr33@gmail.com
+2026-08-02 23:28:41 [INFO] Expanded query pool is fresh — skipping regeneration
+2026-08-02 23:28:46 [INFO] Starting Phase 3 pipeline — 7 queries configured, planner will pick one
+2026-08-02 23:28:51 [INFO] Query weights for 'Salesforce': Salesforce Senior Consultant=0.30, Lead Salesforce Architect=0.30, Salesforce Technical Lead=0.30, Senior Salesforce Developer=0.30, Salesforce Integration Architect=0.30, Salesforce Cloud Architect=0.30, Senior Salesforce Consultant India=0.30, Salesforce Solution Architect=1.00
+2026-08-02 23:28:51 [INFO] Phase3 planner: picked 1 from 'Salesforce' (pool size 8): ['Salesforce Cloud Architect']
+2026-08-02 23:28:54 [INFO] Query weights for 'GenAI Engineer': Senior AI Engineer=0.30, Lead GenAI Developer=0.30, Salesforce AI Architect=0.30, AI Integration Lead=0.30, GenAI Consultant India=0.30, Senior LLM Engineer=0.30, AI Solution Architect=0.30, Lead AI Developer=0.30
+2026-08-02 23:28:54 [INFO] Phase3 planner: picked 1 from 'GenAI Engineer' (pool size 8): ['Lead GenAI Developer']
+2026-08-02 23:28:54 [INFO] Phase3 planner selected 2 queries total across 2 families: ['Salesforce Cloud Architect', 'Lead GenAI Developer']
+2026-08-02 23:29:12 [WARNING] search_jobs: filtered out 'Salesforce Health Cloud Architect' @ 'Zensar' — Unrecognized domain: fa-etvl-saasfaprod1.fa.ocs.oraclecloud.com
+2026-08-02 23:29:36 [INFO] Semantic duplicate: 'Salesforce Architect – Loyalty Management & Marketing Cloud' @ 'Dinero Solutions' (similarity: 0.988) — skipping
+2026-08-02 23:29:39 [INFO] search_jobs: skipped 1 job(s) already scored in a previous run
+2026-08-02 23:29:39 [INFO] search_jobs: skipped 1 job(s) as semantic duplicates
+2026-08-02 23:29:39 [INFO] search_jobs: filtered 1 job(s) as not credible
+2026-08-02 23:29:55 [INFO] search_jobs_adzuna: skipped 5 job(s) already scored in a previous run
+2026-08-02 23:29:55 [INFO] SearchAgent attempt 1: searched 'Salesforce Cloud Architect', found 2 new, 2 total, done=False
+2026-08-02 23:30:24 [INFO] Semantic duplicate: 'Principal Salesforce Developer, IT' @ 'Edwards Lifesciences' (similarity: 1.000) — skipping
+2026-08-02 23:30:37 [INFO] Semantic duplicate: 'Associate Principal Engineer, CRM Salesforce (India)' @ 'Nagarro' (similarity: 0.938) — skipping
+2026-08-02 23:30:37 [INFO] search_jobs: skipped 2 job(s) as semantic duplicates
+2026-08-02 23:30:48 [INFO] SearchAgent attempt 2: searched 'salesforce cloud principal', found 4 new, 6 total, done=True
+2026-08-02 23:30:48 [INFO] Top-level: Search Agent query 'Salesforce Cloud Architect' returned 6 jobs, 6 new after cross-query dedup
+2026-08-02 23:31:15 [WARNING] search_jobs: filtered out 'Lead Software Engineer - Java Full Stack  GENAI (Hyderabad)' @ 'WELLS FARGO BANK' — Unrecognized domain: kitjob.in
+2026-08-02 23:31:25 [WARNING] search_jobs: filtered out 'Sr Developer / Lead – Genai Python Llm Langchain Rag Telangana' @ 'Erptree Consulting Services' — Unrecognized domain: kitjob.in
+2026-08-02 23:31:34 [WARNING] search_jobs: filtered out 'Gen Ai Developer-walkin-(candidates with 4+ yrs exp only) apply' @ 'Tata Consultancy Services' — Spam keyword: walkin
+2026-08-02 23:31:34 [INFO] search_jobs: skipped 2 job(s) already scored in a previous run
+2026-08-02 23:31:34 [INFO] search_jobs: filtered 3 job(s) as not credible
+2026-08-02 23:31:53 [INFO] SearchAgent attempt 1: searched 'Lead GenAI Developer', found 2 new, 2 total, done=False
+2026-08-02 23:32:31 [WARNING] search_jobs: filtered out 'Senior Genai/ml Application Developer (Telangana)' @ 'ServiceNow' — Unrecognized domain: in.jobrapido.com
+2026-08-02 23:32:37 [INFO] Exact duplicate (already embedded): 'Gen Ai Developer-walkin-(candidates with 4+ yrs exp only) apply' @ 'Tata Consultancy Services' — skipping
+2026-08-02 23:32:37 [INFO] search_jobs: skipped 1 job(s) as semantic duplicates
+2026-08-02 23:32:37 [INFO] search_jobs: filtered 1 job(s) as not credible
+2026-08-02 23:32:49 [INFO] SearchAgent attempt 2: searched 'senior genai developer', found 4 new, 6 total, done=True
+2026-08-02 23:32:49 [INFO] Top-level: Search Agent query 'Lead GenAI Developer' returned 6 jobs, 6 new after cross-query dedup
+2026-08-02 23:32:49 [INFO] Top-level: Search Agent total across 2 queries: 12 jobs
+2026-08-02 23:33:04 [INFO] Resume changed — re-embedded 5 chunk(s)
+2026-08-02 23:37:29 [INFO] ResumeAgent scored 12 of 12 jobs
+2026-08-02 23:37:52 [INFO] Top-level: Resume Agent scored 12 jobs
+2026-08-02 23:37:56 [INFO] SkillAgent aggregated 60 distinct gaps
+2026-08-02 23:38:12 [INFO] Top-level: Skill Agent found 60 gaps, researched 3
+2026-08-02 23:38:18 [INFO] Query used: ['Salesforce Cloud Architect', 'Lead GenAI Developer']
+2026-08-02 23:38:18 [INFO] Jobs found: 12
+2026-08-02 23:38:18 [INFO] Jobs scored: 12
+2026-08-02 23:38:31 [INFO] Email sent to prasanthr33@gmail.com

@@ -56,7 +56,7 @@ def load_resume() -> str:
     warning printed if it's missing, instead of crashing at import time."""
     if os.path.exists(RESUME_FILE):
         with open(RESUME_FILE, "r", encoding="utf-8") as f:
-            return f.read()[:3000]
+            return f.read()
     print(f"WARNING: {RESUME_FILE} not found — create it with your resume text before running scoring.")
     return ""
 
