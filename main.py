@@ -14,11 +14,6 @@ from datetime import date
 from db.query_rotation import init_query_rotation_table
 from db.expanded_queries import init_expanded_queries_table, refresh_expanded_queries
 
-# ... with your other init_*() calls:
-init_expanded_queries_table()
-refresh_expanded_queries()  # only actually regenerates if pool is empty or >14 days old
-
-init_query_rotation_table()
 log = get_logger()
 
 
@@ -27,9 +22,13 @@ def main():
     then hands it through Search Agent -> Resume Agent -> Skill Agent,
     each a fully independent sub-graph, coordinated here."""
 
+    # Initialize all DB tables
     init_db()
     init_applications_table()
     init_usage_table()
+    init_query_rotation_table()
+    init_expanded_queries_table()
+    refresh_expanded_queries()  # only regenerates if pool is empty or >14 days old
 
     pipeline = build_phase3_pipeline()
 
@@ -74,9 +73,11 @@ def main():
         f"See attached: jobs_today.xlsx, skill_gap_report.xlsx, job_agent.log\n"
     )
     send_daily_report(
-    summary_text,
-    excel_path=jobs_file or f"jobs_report_{date.today().isoformat()}.xlsx",
-    skill_gap_path=skill_gap_file or f"skill_gaps_{date.today().isoformat()}.xlsx",)
+        summary_text,
+        excel_path=jobs_file or f"jobs_report_{date.today().isoformat()}.xlsx",
+        skill_gap_path=skill_gap_file or f"skill_gaps_{date.today().isoformat()}.xlsx",
+    )
+
 
 if __name__ == "__main__":
     main()
