@@ -1,33 +1,16 @@
 import numpy as np
 import os
+import requests
 from db.connection import get_connection
 from db.repository import make_job_key
 from utils.logger import get_logger
 
 log = get_logger()
 
-GOOGLE_PROJECT_ID = os.getenv("GOOGLE_PROJECT_ID")
-GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+EMBED_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
 
 SIMILARITY_THRESHOLD = 0.92
-
-_initialized = False
-
-
-def _init_vertex():
-    """Lazy-init — only runs when an embedding is actually needed, not
-    at import time. This means a missing/misconfigured credentials file
-    won't crash the whole pipeline at startup."""
-    global _initialized
-    if _initialized:
-        return
-    from google.oauth2 import service_account
-    import vertexai
-
-    credentials = service_account.Credentials.from_service_account_file(GOOGLE_CREDENTIALS_PATH)
-    vertexai.init(project=GOOGLE_PROJECT_ID, credentials=credentials, location="us-central1")
-    _initialized = True
-
 
 def init_embeddings_table():
     conn = get_connection()
@@ -48,12 +31,20 @@ def init_embeddings_table():
 
 
 def _embed_text(text: str) -> np.ndarray:
-    _init_vertex()
-    from vertexai.language_models import TextEmbeddingModel
-
-    model = TextEmbeddingModel.from_pretrained("textembedding-gecko@003")
-    embeddings = model.get_embeddings([text])
-    return np.array(embeddings[0].values, dtype=np.float32)
+    if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY not set")
+    resp = requests.post(
+        f"{EMBED_URL}?key={GEMINI_API_KEY}",
+        json={
+            "model": "models/gemini-embedding-001",
+            "content": {"parts": [{"text": text}]},
+            "outputDimensionality": 768,
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
+    values = resp.json()["embedding"]["values"]
+    return np.array(values, dtype=np.float32)
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
