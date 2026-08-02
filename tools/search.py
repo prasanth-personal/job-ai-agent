@@ -113,6 +113,7 @@ def search_jobs(query: str) -> list[dict]:
             "location": city,
             "apply_link": apply_link,
             "job_description": description[:600],
+            "source_query": query,
         })
 
     if skipped_seen:

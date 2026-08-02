@@ -7,13 +7,15 @@ from utils.retry import call_llm_with_retry
 from tools.search import valid_jobs_this_session
 from config.prompts import build_scoring_prompt
 from db.api_usage import record_usage
+from db.query_performance import record_query_outcome
 from utils.logger import get_logger
 log = get_logger()
 
 
+
 @tool
 def score_job(job_title: str, employer_name: str, job_description: str,
-              apply_link: str, location: str = "") -> dict:
+              apply_link: str, location: str = "", source_query: str = "") -> dict:
     """Score how well a single job matches the candidate's actual resume.
     Refuses to score/save any job that wasn't actually returned by a real
     search_jobs call this session (fabrication guard), unless it's a
@@ -68,6 +70,7 @@ def score_job(job_title: str, employer_name: str, job_description: str,
     else:
         result["match"] = "Low"
 
-    save_score(employer_name, job_title, location, apply_link, result)
+    save_score(employer_name, job_title, location, apply_link, result, source_query=source_query)
+    record_query_outcome(source_query, result["match"])
 
     return result

@@ -31,6 +31,7 @@ def init_db():
             scored_at TIMESTAMP
         )
     """)
+    cur.execute("ALTER TABLE scored_jobs ADD COLUMN IF NOT EXISTS source_query TEXT")
     conn.commit()
     cur.close()
     conn.close()
@@ -66,7 +67,7 @@ def get_cached_score(employer_name: str, job_title: str) -> dict | None:
     }
 
 
-def save_score(employer_name: str, job_title: str, location: str, apply_link: str, result: dict):
+def save_score(employer_name: str, job_title: str, location: str, apply_link: str, result: dict, source_query: str = ""):
     """Persist a freshly computed score so future runs can skip re-scoring."""
     key = make_job_key(employer_name, job_title)
     conn = get_connection()
@@ -74,8 +75,8 @@ def save_score(employer_name: str, job_title: str, location: str, apply_link: st
     cur.execute("""
         INSERT INTO scored_jobs
         (job_key, job_title, employer_name, location, apply_link, match, score,
-         matched_skills, missing_skills, scored_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+         matched_skills, missing_skills, scored_at, source_query)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
         ON CONFLICT (job_key) DO UPDATE SET
             job_title = EXCLUDED.job_title,
             employer_name = EXCLUDED.employer_name,
@@ -85,17 +86,18 @@ def save_score(employer_name: str, job_title: str, location: str, apply_link: st
             score = EXCLUDED.score,
             matched_skills = EXCLUDED.matched_skills,
             missing_skills = EXCLUDED.missing_skills,
-            scored_at = EXCLUDED.scored_at
+            scored_at = EXCLUDED.scored_at,
+            source_query = EXCLUDED.source_query
     """, (
         key, job_title, employer_name, location, apply_link,
         result.get("match"), result.get("score"),
         json.dumps(result.get("matched_skills", [])),
         json.dumps(result.get("missing_skills", [])),
+        source_query,
     ))
     conn.commit()
     cur.close()
     conn.close()
-
 
 def is_already_scored(employer_name: str, job_title: str) -> bool:
     key = make_job_key(employer_name, job_title)

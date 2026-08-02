@@ -75,6 +75,7 @@ def is_semantic_duplicate(employer_name: str, job_title: str, job_description: s
 
     for existing_key, stored_bytes in rows:
         if existing_key == key:
+            log.info(f"Exact duplicate (already embedded): '{job_title}' @ '{employer_name}' — skipping")
             cur.close()
             conn.close()
             return True

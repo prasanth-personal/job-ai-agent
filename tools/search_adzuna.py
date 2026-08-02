@@ -71,6 +71,7 @@ def search_jobs_adzuna(query: str) -> list[dict]:
             "location": location,
             "apply_link": apply_link,
             "job_description": description[:600],
+            "source_query": query,
         })
 
     if skipped_seen:

@@ -1,4 +1,11 @@
+import random
 from db.connection import get_connection
+from db.query_performance import get_query_scores
+from utils.logger import get_logger
+
+log = get_logger()
+
+MIN_WEIGHT_FLOOR = 0.05  # a query never hits zero odds — keeps exploration alive
 
 
 def init_query_rotation_table():
@@ -16,37 +23,28 @@ def init_query_rotation_table():
 
 
 def get_next_queries_for_family(role_family: str, family_queries: list[str], n: int) -> list[str]:
+    """Weighted-random pick, favoring queries with a higher historical
+    High-match rate — replaces the old pure round-robin cursor."""
     if not family_queries or n <= 0:
         return []
 
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO query_rotation (role_family, last_index) VALUES (%s, -1) ON CONFLICT (role_family) DO NOTHING",
-        (role_family,)
-    )
-    cur.execute("SELECT last_index FROM query_rotation WHERE role_family = %s", (role_family,))
-    row = cur.fetchone()
-    last_index = row[0] if row else -1
+    n = min(n, len(family_queries))
+    scores = get_query_scores(family_queries)
 
-    total = len(family_queries)
-    n = min(n, total)
+    pool = list(family_queries)
+    weights = [max(scores.get(q, 0.3), MIN_WEIGHT_FLOOR) for q in pool]
 
     selected = []
-    idx = last_index
     for _ in range(n):
-        idx = (idx + 1) % total
-        selected.append(family_queries[idx])
+        pick = random.choices(pool, weights=weights, k=1)[0]
+        idx = pool.index(pick)
+        selected.append(pool.pop(idx))
+        weights.pop(idx)
 
-    cur.execute("UPDATE query_rotation SET last_index = %s WHERE role_family = %s", (idx, role_family))
-    conn.commit()
-    cur.close()
-    conn.close()
-
+    log.info(f"Query weights for '{role_family}': " + ", ".join(f"{q}={scores.get(q, 0.3):.2f}" for q in family_queries))
     return selected
 
 
 def get_next_queries(all_queries: list[str], n: int) -> list[str]:
-    """Legacy flat rotation — kept for the fallback path (static
-    SEARCH_QUERIES list, which has no role_family labels)."""
+    """Legacy flat fallback — now also weighted, same as above."""
     return get_next_queries_for_family("__flat__", all_queries, n)

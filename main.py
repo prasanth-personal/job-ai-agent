@@ -15,6 +15,7 @@ from db.query_rotation import init_query_rotation_table
 from db.expanded_queries import init_expanded_queries_table, refresh_expanded_queries
 from db.checkpoints import init_checkpoint_table, load_checkpoint, clear_checkpoint, next_stage
 from db.embeddings import init_embeddings_table
+from db.query_performance import init_query_performance_table
 
 log = get_logger()
 
@@ -26,6 +27,7 @@ def main():
     init_query_rotation_table()
     init_expanded_queries_table()
     init_checkpoint_table()
+    init_query_performance_table()
     init_embeddings_table()
     refresh_expanded_queries()
 

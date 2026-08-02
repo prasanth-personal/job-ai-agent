@@ -9,8 +9,6 @@ log = get_logger()
 
 
 def score_step(state: ResumeAgentState) -> dict:
-    """Scores every job, same as Phase 2's score_node — this part is
-    reused logic, not new."""
     scored = []
     for job in state["raw_jobs"]:
         try:
@@ -20,11 +18,13 @@ def score_step(state: ResumeAgentState) -> dict:
                 "job_description": job.get("job_description", ""),
                 "apply_link": job.get("apply_link", ""),
                 "location": job.get("location", ""),
+                "source_query": job.get("source_query", ""),
             })
             scored.append({
                 "job_title": job.get("job_title", ""),
                 "employer_name": job.get("employer_name", ""),
                 "apply_link": job.get("apply_link", ""),
+                "source_query": job.get("source_query", ""),
                 **result,
             })
         except Exception as e:
