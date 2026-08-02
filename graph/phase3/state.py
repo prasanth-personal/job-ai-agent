@@ -2,27 +2,13 @@ from typing import TypedDict
 
 
 class TopLevelState(TypedDict):
-    # Set by the top-level planner — same idea as Phase 2's planner,
-    # decides which queries to prioritize this run.
     queries: list[str]
-
-    # Set by Search Agent (its own sub-graph) — the final list of
-    # credible jobs it found, after its own internal search-and-judge loop.
-    # Search Agent's OWN internal reasoning/state does not leak out here —
-    # only this final result does.
     found_jobs: list[dict]
-
-    # Set by Resume Agent — scored jobs, and for High matches, an added
-    # tailored_resume_notes field (new capability vs Phase 2).
     scored_jobs: list[dict]
-
-    # Set by Skill Agent — aggregated skill gaps, potentially with
-    # research notes on high-priority gaps (new capability vs Phase 2).
     skill_gaps: dict[str, int]
     skill_research: dict[str, str]
-
-    # Set by the final Recommendation step.
     final_summary: str
+    _resume_stage: str  # NEW — where the entry router should start
 
 
 def initial_top_state(queries: list[str]) -> TopLevelState:
@@ -33,4 +19,19 @@ def initial_top_state(queries: list[str]) -> TopLevelState:
         skill_gaps={},
         skill_research={},
         final_summary="",
+        _resume_stage="planner",
+    )
+
+
+def resume_top_state(saved_state: dict, resume_stage: str) -> TopLevelState:
+    """Rebuild state from a saved checkpoint, entering the graph at the
+    stage right after the last one that completed."""
+    return TopLevelState(
+        queries=saved_state.get("queries", []),
+        found_jobs=saved_state.get("found_jobs", []),
+        scored_jobs=saved_state.get("scored_jobs", []),
+        skill_gaps=saved_state.get("skill_gaps", {}),
+        skill_research=saved_state.get("skill_research", {}),
+        final_summary=saved_state.get("final_summary", ""),
+        _resume_stage=resume_stage,
     )

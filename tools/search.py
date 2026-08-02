@@ -5,6 +5,7 @@ log = get_logger()
 from urllib.parse import urlparse
 from config.settings import RAPIDAPI_KEY, SPAM_KEYWORDS, TRUSTED_BOARDS, SUSPICIOUS_BOARDS
 from db.repository import is_already_scored, make_job_key
+from db.embeddings import is_semantic_duplicate
 from langchain_core.tools import tool
 
 
@@ -15,13 +16,11 @@ def _clean_text(text: str) -> str:
     if not text:
         return text
     text = html.unescape(text)
-    text = text.replace("u0026", "&")  # catches the raw literal case too
+    text = text.replace("u0026", "&")
     return text
 
 
 def verify_apply_link(apply_link: str, employer_website: str = "") -> tuple[bool, str]:
-    """Check whether a job's apply link is trustworthy.
-    Returns (is_ok: bool, reason: str)."""
     if not apply_link:
         return False, "No apply link"
 
@@ -48,7 +47,6 @@ def verify_apply_link(apply_link: str, employer_website: str = "") -> tuple[bool
 
 
 def is_credible(job_title: str, employer_name: str, apply_link: str, employer_website: str = "") -> tuple[bool, str]:
-    """Combined credibility check: spam keywords + apply link verification."""
     combined = f"{job_title} {employer_name}".lower()
     for kw in SPAM_KEYWORDS:
         if kw in combined:
@@ -61,17 +59,12 @@ def is_credible(job_title: str, employer_name: str, apply_link: str, employer_we
     return True, "OK"
 
 
-# Tracks employer+title keys that came from a REAL search_jobs call this
-# session — score_job checks against this to reject fabricated jobs.
 valid_jobs_this_session = set()
 
 
 @tool
 def search_jobs(query: str) -> list[dict]:
-    """Search for job postings matching a given query, filtered to India.
-    Returns a trimmed list of job dicts with title, company, location, apply link,
-    and a short job_description excerpt. Jobs already scored in a previous run,
-    or that fail credibility checks, are filtered out here before the LLM sees them."""
+    """Search for job postings matching a given query, filtered to India."""
     url = "https://jsearch.p.rapidapi.com/search-v2"
     headers = {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
@@ -90,14 +83,21 @@ def search_jobs(query: str) -> list[dict]:
     trimmed_jobs = []
     skipped_seen = 0
     skipped_spam = 0
+    skipped_semantic = 0
+
     for job in raw_jobs:
         title = _clean_text(job.get("job_title"))
         employer = _clean_text(job.get("employer_name"))
         apply_link = job.get("job_apply_link", "")
         employer_website = job.get("employer_website", "") or ""
+        description = job.get("job_description", "") or ""
 
         if is_already_scored(employer, title):
             skipped_seen += 1
+            continue
+
+        if is_semantic_duplicate(employer, title, description):
+            skipped_semantic += 1
             continue
 
         credible, reason = is_credible(title, employer, apply_link, employer_website)
@@ -112,11 +112,13 @@ def search_jobs(query: str) -> list[dict]:
             "employer_name": employer,
             "location": city,
             "apply_link": apply_link,
-            "job_description": job.get("job_description", "")[:600],
+            "job_description": description[:600],
         })
 
     if skipped_seen:
         log.info(f"search_jobs: skipped {skipped_seen} job(s) already scored in a previous run")
+    if skipped_semantic:
+        log.info(f"search_jobs: skipped {skipped_semantic} job(s) as semantic duplicates")
     if skipped_spam:
         log.info(f"search_jobs: filtered {skipped_spam} job(s) as not credible")
 

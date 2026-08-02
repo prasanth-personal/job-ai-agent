@@ -2,6 +2,7 @@ import re
 import requests
 from config.settings import ADZUNA_APP_ID, ADZUNA_APP_KEY, ADZUNA_ENABLED
 from db.repository import is_already_scored, make_job_key
+from db.embeddings import is_semantic_duplicate
 from tools.search import is_credible, valid_jobs_this_session, _clean_text
 from langchain_core.tools import tool
 from utils.logger import get_logger
@@ -10,19 +11,13 @@ log = get_logger()
 
 
 def _clean_adzuna_query(query: str) -> str:
-    """Adzuna's country is set via the URL path, not the search text —
-    strip a trailing 'India' so the search term itself stays clean."""
     cleaned = re.sub(r"\s+India\s*$", "", query, flags=re.IGNORECASE)
     return cleaned.strip() or query
 
 
 @tool
 def search_jobs_adzuna(query: str) -> list[dict]:
-    """Search for job postings on Adzuna matching a given query, filtered to India.
-    Same shape and filtering as search_jobs (JSearch) — credibility checks,
-    already-scored dedup, and fabrication-guard registration all apply here too.
-    Use this as a SECOND, independent source alongside search_jobs — Adzuna has
-    its own separate quota, so use it when search_jobs results feel limited."""
+    """Search for job postings on Adzuna matching a given query, filtered to India."""
     if not ADZUNA_ENABLED:
         return [{"info": "Adzuna is not configured (missing ADZUNA_APP_ID/KEY) — skip this tool."}]
 
@@ -47,15 +42,21 @@ def search_jobs_adzuna(query: str) -> list[dict]:
     trimmed_jobs = []
     skipped_seen = 0
     skipped_spam = 0
+    skipped_semantic = 0
+
     for job in raw_jobs:
         title = _clean_text(job.get("title", ""))
         employer = _clean_text((job.get("company") or {}).get("display_name", ""))
         apply_link = job.get("redirect_url", "")
-        description = job.get("description", "")
+        description = job.get("description", "") or ""
         location = (job.get("location") or {}).get("display_name", "Not specified")
 
         if is_already_scored(employer, title):
             skipped_seen += 1
+            continue
+
+        if is_semantic_duplicate(employer, title, description):
+            skipped_semantic += 1
             continue
 
         credible, reason = is_credible(title, employer, apply_link)
@@ -74,11 +75,11 @@ def search_jobs_adzuna(query: str) -> list[dict]:
 
     if skipped_seen:
         log.info(f"search_jobs_adzuna: skipped {skipped_seen} job(s) already scored in a previous run")
+    if skipped_semantic:
+        log.info(f"search_jobs_adzuna: skipped {skipped_semantic} job(s) as semantic duplicates")
     if skipped_spam:
         log.info(f"search_jobs_adzuna: filtered {skipped_spam} job(s) as not credible")
 
-    # Register with the SAME fabrication guard used by search_jobs — one
-    # shared set, so score_job doesn't care which tool found a given job.
     for job in trimmed_jobs:
         valid_jobs_this_session.add(make_job_key(job["employer_name"], job["job_title"]))
 
