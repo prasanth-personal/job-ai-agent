@@ -20,6 +20,8 @@ _resume_agent = build_resume_agent()
 _skill_agent = build_skill_agent()
 
 INTER_QUERY_DELAY_SECONDS = 2
+MAX_REPLANS = 2          # total mid-run replans allowed, combined across both triggers
+HIGH_YIELD_THRESHOLD = 0.5  # if >=50% of scored jobs are High, worth searching this family more
 
 
 def _checkpoint(state: TopLevelState, stage: str, delta: dict):
@@ -34,11 +36,13 @@ def planner_node(state: TopLevelState) -> dict:
 
 
 def search_node(state: TopLevelState) -> dict:
-    all_raw_jobs = []
-    seen_keys = set()
+    already_searched = set(state.get("searched_queries", []))
+    new_queries = [q for q in state["queries"] if q not in already_searched]
 
-    queries = state["queries"] or []
-    for i, query in enumerate(queries):
+    all_raw_jobs = list(state.get("found_jobs", []))
+    seen_keys = {make_job_key(j.get("employer_name", ""), j.get("job_title", "")) for j in all_raw_jobs}
+
+    for i, query in enumerate(new_queries):
         sub_result = _search_agent.invoke(initial_search_state(query))
         new_jobs = sub_result["raw_jobs"]
 
@@ -53,11 +57,14 @@ def search_node(state: TopLevelState) -> dict:
 
         log.info(f"Top-level: Search Agent query '{query}' returned {len(new_jobs)} jobs, {added} new after cross-query dedup")
 
-        if i < len(queries) - 1:
+        if i < len(new_queries) - 1:
             time.sleep(INTER_QUERY_DELAY_SECONDS)
 
-    log.info(f"Top-level: Search Agent total across {len(queries)} quer{'y' if len(queries)==1 else 'ies'}: {len(all_raw_jobs)} jobs")
-    delta = {"found_jobs": all_raw_jobs}
+    log.info(f"Top-level: Search Agent total across {len(state['queries'])} quer{'y' if len(state['queries'])==1 else 'ies'}: {len(all_raw_jobs)} jobs")
+    delta = {
+        "found_jobs": all_raw_jobs,
+        "searched_queries": list(already_searched) + new_queries,
+    }
     _checkpoint(state, "search", delta)
     return delta
 
@@ -91,6 +98,29 @@ def route_start_stage(state: TopLevelState) -> str:
     return state.get("_resume_stage") or "planner"
 
 
+def should_replan_after_search(state: TopLevelState) -> str:
+    """Reactive trigger #1: Search Agent found NOTHING — worth trying
+    different queries instead of running the rest of the pipeline on 0 jobs."""
+    if len(state.get("found_jobs", [])) == 0 and state.get("replan_count", 0) < MAX_REPLANS:
+        log.info("Top-level: 0 jobs found — routing back to planner for different queries")
+        return "planner"
+    return "resume"
+
+
+def should_replan_after_resume(state: TopLevelState) -> str:
+    """Reactive trigger #2: an unusually high proportion of High matches
+    suggests the current queries are hitting a strong seam — worth
+    searching more before moving to reporting."""
+    scored = state.get("scored_jobs", [])
+    if not scored or state.get("replan_count", 0) >= MAX_REPLANS:
+        return "skill"
+    high_ratio = sum(1 for j in scored if j.get("match") == "High") / len(scored)
+    if high_ratio >= HIGH_YIELD_THRESHOLD:
+        log.info(f"Top-level: {high_ratio:.0%} High matches — routing back to planner to search more")
+        return "planner"
+    return "skill"
+
+
 def build_phase3_pipeline():
     builder = StateGraph(TopLevelState)
     builder.add_node("planner", planner_node)
@@ -104,8 +134,8 @@ def build_phase3_pipeline():
         {"planner": "planner", "search": "search", "resume": "resume", "skill": "skill", "recommend": "recommend"},
     )
     builder.add_edge("planner", "search")
-    builder.add_edge("search", "resume")
-    builder.add_edge("resume", "skill")
+    builder.add_conditional_edges("search", should_replan_after_search, {"planner": "planner", "resume": "resume"})
+    builder.add_conditional_edges("resume", should_replan_after_resume, {"planner": "planner", "skill": "skill"})
     builder.add_edge("skill", "recommend")
     builder.add_edge("recommend", END)
 

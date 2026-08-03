@@ -8,19 +8,28 @@ log = get_logger()
 
 
 def planner_node(state: TopLevelState) -> dict:
-    """Top-level planner — deterministic round-robin, but now split
-    EVENLY ACROSS ROLE FAMILIES (Salesforce, GenAI Engineer, etc.)
-    instead of one flat pool. This guarantees both tracks get searched
-    most runs, instead of one family dominating by chance the way a
-    single shared cursor allowed.
+    """Top-level planner — weighted selection split evenly across role
+    families. Also serves as the mid-run REPLAN step: if the graph loops
+    back here (zero results, or chasing a high-yield query), only ONE
+    new query is added — from whichever family the replan counter points
+    at — excluding anything already tried this run."""
+    already_tried = set(state.get("queries", []))
+    is_replan = len(already_tried) > 0
 
-    MAX_SEARCHES is distributed as evenly as possible across families —
-    e.g. MAX_SEARCHES=2 with 2 families = 1 query per family. Any
-    remainder (if MAX_SEARCHES doesn't divide evenly) goes to the
-    families earliest in the dict, in order."""
     grouped = get_queries_grouped_by_family()
     families = list(grouped.keys())
     num_families = len(families)
+
+    if is_replan:
+        replan_count = state.get("replan_count", 0) + 1
+        family = families[(replan_count - 1) % num_families]
+        family_queries = [q for q in grouped[family] if q not in already_tried]
+        if not family_queries:
+            log.info(f"Phase3 planner REPLAN #{replan_count}: no untried queries left in '{family}' — nothing new to add")
+            return {"queries": list(already_tried), "replan_count": replan_count}
+        picked = get_next_queries_for_family(family, family_queries, 1)
+        log.info(f"Phase3 planner REPLAN #{replan_count}: added 1 query from '{family}': {picked}")
+        return {"queries": list(already_tried) + picked, "replan_count": replan_count}
 
     base_per_family = MAX_SEARCHES // num_families
     remainder = MAX_SEARCHES % num_families
