@@ -1,18 +1,16 @@
-import sqlite3
 import json
 from datetime import date
 import pandas as pd
-from config.settings import DB_FILE
+from db.connection import get_connection
 
 
 def export_to_excel(filename: str = None) -> str:
-    """Pull every scored job out of SQLite, join with application status,
-    and write to a date-stamped Excel file. Returns the actual filename
-    used, so callers (e.g. the email sender) know exactly what was created."""
+    """Pull every scored job out of Postgres, join with application status,
+    and write to a date-stamped Excel file."""
     if filename is None:
         filename = f"jobs_report_{date.today().isoformat()}.xlsx"
 
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_connection()
     df = pd.read_sql_query("""
         SELECT s.job_title, s.employer_name, s.location, s.match, s.score,
                s.matched_skills, s.missing_skills, s.apply_link, s.scored_at,

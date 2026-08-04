@@ -12,7 +12,7 @@ ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 ADZUNA_ENABLED = bool(ADZUNA_APP_ID and ADZUNA_APP_KEY)
 
 RESUME_FILE = "my_resume.txt"
-DB_FILE = "job_agent.db"
+
 MAX_SEARCHES = 2
 
 TRUSTED_BOARDS = [
