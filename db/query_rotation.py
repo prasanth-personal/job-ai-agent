@@ -41,7 +41,7 @@ def get_next_queries_for_family(role_family: str, family_queries: list[str], n: 
         selected.append(pool.pop(idx))
         weights.pop(idx)
 
-    log.info(f"Query weights for '{role_family}': " + ", ".join(f"{q}={scores.get(q, 0.3):.2f}" for q in family_queries))
+    log.info(f"Query weights for '{role_family}': " + ", ".join(f"{q}={max(scores.get(q, 0.3), MIN_WEIGHT_FLOOR):.2f}" for q in family_queries))
     return selected
 
 

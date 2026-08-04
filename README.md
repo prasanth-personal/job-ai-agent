@@ -43,7 +43,7 @@ The top-level graph itself is resumable: after every stage (planner → search �
 - **After Search:** if a query returns zero new jobs, the planner is re-invoked to pick one different, untried query from the pool rather than letting the rest of the pipeline run on nothing.
 - **After Resume:** if an unusually high proportion of scored jobs come back as High matches (≥ configurable threshold), the planner is re-invoked to search further in that direction, since the current queries appear to be hitting a strong seam.
 
-Each replan pass adds exactly one new query, excludes anything already tried this run, and accumulates results (jobs, scored jobs) rather than overwriting them — verified via forced-trigger testing to confirm both loop-backs route correctly, respect the replan cap, and never re-select an already-searched query.
+Each replan pass adds exactly one new query, excludes anything already tried this run, and accumulates results (jobs, scored jobs) rather than overwriting them, instead of the naive approach of re-searching everything from scratch on every loop-back.
 
 ## 4. Tech Stack
 
