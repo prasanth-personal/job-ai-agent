@@ -61,10 +61,9 @@ def search_node(state: TopLevelState) -> dict:
             time.sleep(INTER_QUERY_DELAY_SECONDS)
 
     log.info(f"Top-level: Search Agent total across {len(state['queries'])} quer{'y' if len(state['queries'])==1 else 'ies'}: {len(all_raw_jobs)} jobs")
-    delta = {
-        "found_jobs": all_raw_jobs,
-        "searched_queries": list(already_searched) + new_queries,
-    }
+
+    delta = {"found_jobs": all_raw_jobs, "searched_queries": list(already_searched.union(new_queries))}
+
     _checkpoint(state, "search", delta)
     return delta
 
