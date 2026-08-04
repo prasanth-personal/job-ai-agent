@@ -18,4 +18,17 @@ def export_skill_gaps(skill_gap_tracker: Counter, filename: str = None) -> str:
     )
     df.to_excel(filename, index=False)
     print(f"Exported skill gap report to {filename}")
+    return filename\
+
+def export_all_time_skill_gaps(skill_gap_tracker: Counter, filename: str = None) -> str:
+    """Same as export_skill_gaps, but for the full historical tracker
+    pulled from the database instead of just this run's in-memory one."""
+    if filename is None:
+        filename = f"skill_gaps_all_time_{date.today().isoformat()}.xlsx"
+    if not skill_gap_tracker:
+        print("No skill gap data to export.")
+        return None
+    df = pd.DataFrame(skill_gap_tracker.most_common(20), columns=["Skill", "Jobs Mentioning It (All-Time)"])
+    df.to_excel(filename, index=False)
+    print(f"Exported all-time skill gap report to {filename}")
     return filename

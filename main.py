@@ -1,11 +1,11 @@
-from db.repository import init_db
+from db.repository import init_db, get_all_missing_skills
 from db.applications import init_applications_table
 from db.api_usage import init_usage_table, get_usage_today, RPD_LIMIT, TPD_LIMIT
 from graph.phase3.build import build_phase3_pipeline
 from graph.phase3.state import initial_top_state, resume_top_state
 from reports.summary import print_real_summary
 from reports.excel_export import export_to_excel
-from reports.skill_gap_export import export_skill_gaps
+from reports.skill_gap_export import export_skill_gaps, export_all_time_skill_gaps
 from notifications.email_sender import send_daily_report
 from config.settings import SEARCH_QUERIES
 from utils.logger import get_logger
@@ -32,9 +32,8 @@ def main():
     init_query_performance_table()
     init_resume_chunks_table()
     init_embeddings_table()
-    refresh_expanded_queries()
     init_search_usage_table()
-    
+    refresh_expanded_queries()
 
     today = date.today()
     checkpoint = load_checkpoint(today)
@@ -76,8 +75,15 @@ def main():
     print(result["final_summary"])
 
     print_real_summary()
+
+    all_time_gaps = get_all_missing_skills()
+    print("\n--- ALL-TIME SKILL GAP REPORT (from database) ---")
+    for skill, count in all_time_gaps.most_common(10):
+        print(f"  {skill}: missing in {count} job(s) across all runs")
+
     jobs_file = export_to_excel()
     skill_gap_file = export_skill_gaps(Counter(result["skill_gaps"]))
+    all_time_skill_gap_file = export_all_time_skill_gaps(all_time_gaps)
 
     usage_today = get_usage_today()
     search_usage = get_usage_summary()
@@ -90,12 +96,13 @@ def main():
         f"(limits: {RPD_LIMIT} req/day, {TPD_LIMIT} tokens/day)\n\n"
         f"JSearch usage this month: {search_usage['jsearch']['month']}/{search_usage['jsearch']['limit']}\n"
         f"Adzuna usage this month: {search_usage['adzuna']['month']}/{search_usage['adzuna']['limit']}\n\n"
-        f"See attached: jobs_today.xlsx, skill_gap_report.xlsx, job_agent.log\n"
+        f"See attached: jobs_today.xlsx, skill_gap_report.xlsx, all_time_skill_gaps.xlsx, job_agent.log\n"
     )
     send_daily_report(
         summary_text,
         excel_path=jobs_file or f"jobs_report_{date.today().isoformat()}.xlsx",
         skill_gap_path=skill_gap_file or f"skill_gaps_{date.today().isoformat()}.xlsx",
+        all_time_skill_gap_path=all_time_skill_gap_file or f"skill_gaps_all_time_{date.today().isoformat()}.xlsx",
     )
 
 

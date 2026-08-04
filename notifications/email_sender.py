@@ -26,7 +26,7 @@ def _attach_file(msg: MIMEMultipart, filepath: str):
 
 
 def send_daily_report(summary_text: str, excel_path: str = None,
-                       skill_gap_path: str = None,
+                       skill_gap_path: str = None,all_time_skill_gap_path: str = None,
                        log_path: str = "job_agent.log"):
     """Sends one email with the job results Excel, skill gap Excel, and
     log file attached. Missing files are skipped individually rather than
@@ -43,7 +43,7 @@ def send_daily_report(summary_text: str, excel_path: str = None,
 
     msg.attach(MIMEText(summary_text, "plain"))
 
-    for path in [excel_path, skill_gap_path, log_path]:
+    for path in [excel_path, skill_gap_path, all_time_skill_gap_path, log_path]:
         _attach_file(msg, path)
 
     try:

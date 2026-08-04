@@ -1,5 +1,6 @@
 import json
 from db.connection import get_connection
+from collections import Counter
 
 
 # ---------------------------------------------------------------------------
@@ -108,3 +109,23 @@ def is_already_scored(employer_name: str, job_title: str) -> bool:
     cur.close()
     conn.close()
     return row is not None
+def get_all_missing_skills() -> Counter:
+    """Aggregate missing_skills across EVERY job ever scored, not just
+    this run — same fix philosophy as the Excel job report: read from
+    the full persisted history in Postgres, not just in-memory state."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT missing_skills FROM scored_jobs")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    tracker = Counter()
+    for (missing_json,) in rows:
+        if not missing_json:
+            continue
+        for skill in json.loads(missing_json):
+            cleaned = skill.strip().lower()
+            if cleaned:
+                tracker[cleaned] += 1
+    return tracker
